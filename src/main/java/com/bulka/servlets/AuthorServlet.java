@@ -19,10 +19,6 @@ import java.util.List;
 public class AuthorServlet extends HttpServlet {
     private AuthorService authorService;
 
-    public AuthorServlet(AuthorService authorService) {
-        this.authorService = authorService;
-    }
-
     @Override
     public void init() throws ServletException {
         Connection connection = DatabaseConfig.getConnection();
@@ -30,49 +26,74 @@ public class AuthorServlet extends HttpServlet {
         this.authorService = new AuthorService(authorRepository);
     }
 
-
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String id = req.getParameter("id");
-        if (id != null) {
-            AuthorDTO authorDTO = authorService.getAuthorById(Long.parseLong(id));
-            PrintWriter writer = resp.getWriter();
-            writer.println(authorDTO);
+        if (id!= null &&!id.isEmpty()) {
+            try {
+                AuthorDTO authorDTO = authorService.getAuthorById(Long.parseLong(id));
+                PrintWriter writer = resp.getWriter();
+                writer.println(authorDTO);
+                writer.close();
+            } catch (NumberFormatException e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            }
         } else {
             List<AuthorDTO> authors = authorService.getAllAuthors();
             PrintWriter writer = resp.getWriter();
             writer.println(authors);
+            writer.close();
         }
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String name = req.getParameter("name");
         String surname = req.getParameter("surname");
-        AuthorDTO authorDTO = new AuthorDTO();
-        authorDTO.setName(name);
-        authorDTO.setSurname(surname);
-        authorService.createAuthor(authorDTO);
-        resp.setStatus(HttpServletResponse.SC_CREATED);
+        if (name!= null &&!name.isEmpty() && surname!= null &&!surname.isEmpty()) {
+            AuthorDTO authorDTO = new AuthorDTO();
+            authorDTO.setName(name);
+            authorDTO.setSurname(surname);
+            authorService.createAuthor(authorDTO);
+            resp.setStatus(HttpServletResponse.SC_CREATED);
+        } else {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String id = req.getParameter("id");
         String name = req.getParameter("name");
         String surname = req.getParameter("surname");
-        AuthorDTO authorDTO = new AuthorDTO();
-        authorDTO.setId(Long.parseLong(id));
-        authorDTO.setName(name);
-        authorDTO.setSurname(surname);
-        authorService.updateAuthor(authorDTO);
-        resp.setStatus(HttpServletResponse.SC_OK);
+        if (id!= null &&!id.isEmpty() && name!= null &&!name.isEmpty() && surname!= null &&!surname.isEmpty()) {
+            try {
+                AuthorDTO authorDTO = new AuthorDTO();
+                authorDTO.setId(Long.parseLong(id));
+                authorDTO.setName(name);
+                authorDTO.setSurname(surname);
+                authorService.updateAuthor(authorDTO);
+                resp.setStatus(HttpServletResponse.SC_OK);
+            } catch (NumberFormatException e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            }
+        } else {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String id = req.getParameter("id");
-        authorService.deleteAuthor(Long.parseLong(id));
-        resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        if (id!= null &&!id.isEmpty()) {
+            try {
+                authorService.deleteAuthor(Long.parseLong(id));
+                resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            } catch (NumberFormatException e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            }
+        } else {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        }
     }
 }

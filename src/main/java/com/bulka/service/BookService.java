@@ -14,7 +14,6 @@ public class BookService {
         this.bookRepository = bookRepository;
     }
 
-
     public List<BookDTO> getAllBooks() {
         List<Book> books = bookRepository.getAllBooks();
         List<BookDTO> bookDTOS = new ArrayList<>();
@@ -30,6 +29,9 @@ public class BookService {
 
     public BookDTO getBookById(Long id) {
         Book book = bookRepository.getBookById(id);
+        if (book == null) {
+            return null;
+        }
         BookDTO bookDTO = new BookDTO();
         bookDTO.setId(book.getId());
         bookDTO.setTitle(book.getTitle());
@@ -45,14 +47,20 @@ public class BookService {
     }
 
     public void updateBook(BookDTO bookDTO) {
-        Book book = new Book();
-        book.setId(bookDTO.getId());
+        Book book = bookRepository.getBookById(bookDTO.getId());
+        if (book == null) {
+            throw new RuntimeException("Книга не найдена");
+        }
         book.setTitle(bookDTO.getTitle());
         book.setAuthorId(bookDTO.getAuthorId());
         bookRepository.updateBook(book);
     }
 
     public void deleteBook(Long id) {
+        Book book = bookRepository.getBookById(id);
+        if (book == null) {
+            throw new RuntimeException("Книга не найдена");
+        }
         bookRepository.deleteBook(id);
     }
 }

@@ -1,19 +1,18 @@
 package com.bulka.repository;
 
 import com.bulka.entity.Book;
-import com.bulka.utils.DatabaseConfig;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class BookRepository {
     private Connection connection;
 
     public BookRepository(Connection connection) {
-        this.connection = DatabaseConfig.getConnection();
+        this.connection = connection;
     }
-
 
     public List<Book> getAllBooks() {
         List<Book> books = new ArrayList<>();
@@ -27,35 +26,44 @@ public class BookRepository {
                 books.add(book);
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Ошибка выполнения запроса", e);
+            throw new RepositoryException("Ошибка выполнения запроса", e);
         }
         return books;
     }
 
     public Book getBookById(Long id) {
-        Book book = new Book();
         try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM books WHERE id =?")) {
             statement.setLong(1, id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    book.setId(resultSet.getLong("id"));
-                    book.setTitle(resultSet.getString("title"));
-                    book.setAuthorId(resultSet.getLong("author_id"));
+                if (resultSet == null || !resultSet.next()) {
+                    return null;
                 }
+                Book book = new Book();
+                book.setId(resultSet.getLong("id"));
+                book.setTitle(resultSet.getString("title"));
+                book.setAuthorId(resultSet.getLong("author_id"));
+                return book;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Ошибка выполнения запроса", e);
+            throw new RepositoryException("Ошибка выполнения запроса", e);
         }
-        return book;
     }
 
     public void createBook(Book book) {
-        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO books (title, author_id) VALUES (?,?)")) {
+        if (book.getTitle() == null || book.getTitle().isEmpty()) {
+            throw new RepositoryException("Название книги не может быть пустым", null);
+        }
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO books (title, author_id) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, book.getTitle());
             statement.setLong(2, book.getAuthorId());
             statement.executeUpdate();
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    book.setId(generatedKeys.getLong(1));
+                }
+            }
         } catch (SQLException e) {
-            throw new RuntimeException("Ошибка выполнения запроса", e);
+            throw new RepositoryException("Ошибка выполнения запроса", e);
         }
     }
 
@@ -66,7 +74,7 @@ public class BookRepository {
             statement.setLong(3, book.getId());
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Ошибка выполнения запроса", e);
+            throw new RepositoryException("Ошибка выполнения запроса", e);
         }
     }
 
@@ -75,7 +83,7 @@ public class BookRepository {
             statement.setLong(1, id);
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Ошибка выполнения запроса", e);
+            throw new RepositoryException("Ошибка выполнения запроса", e);
         }
     }
 }
